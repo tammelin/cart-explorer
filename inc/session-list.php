@@ -27,11 +27,7 @@ class Paulund_Wp_List_Table
         );
     }
 
-    /**
-     * Display the list table page
-     *
-     * @return Void
-     */
+    // To be moved to main class instead
     public function list_table_page()
     {
         if (!isset($_GET['session_details'])) {
@@ -49,7 +45,7 @@ class Paulund_Wp_List_Table
             <div class="wrap">
                 <div id="icon-users" class="icon32"></div>
                 <h2><?php _e('Carts', 'asdf') ?></h2>
-                <?php Mirakel_Woocommerce_Carts::render_session_details( $_GET['session_details'] ); ?>
+                <?php Mirakel_Woocommerce_Carts::render_session_details( intval( $_GET['session_details'] ) ); ?>
             </div>
         <?php }
     }

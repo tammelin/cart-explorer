@@ -4,6 +4,8 @@
  * Plugin Name: Mirakel WooCommerce Carts
  */
 
+use function PHPSTORM_META\type;
+
 require_once('inc/session-list.php');
 
 class Mirakel_Woocommerce_Carts
@@ -11,6 +13,7 @@ class Mirakel_Woocommerce_Carts
     function __construct()
     {
         add_action('admin_menu', array('Mirakel_Woocommerce_Carts', 'add_admin_menu_item'));
+        add_action('wp_footer', array('Mirakel_Woocommerce_Carts', 'footer_debug'));
     }
 
     public static function add_admin_menu_item()
@@ -18,14 +21,22 @@ class Mirakel_Woocommerce_Carts
         add_menu_page($page_title = 'Mirakel WooCommerce Carts', $menu_title = 'WooCommerce Carts', $capability = 'manage_options', $menu_slug = 'mirakel_woocommerce_carts', $function = array('Mirakel_Woocommerce_Carts', 'render_admin_page'), $icon_url = null, $position = null);
     }
 
-    public static function convert_wc_session_into_array($db_result)
+    public static function query_database($session_id)
     {
+        global $wpdb;
+        if( gettype($session_id) === 'integer' ) {
+            $results = $wpdb->get_results( $wpdb->prepare("SELECT * FROM {$wpdb->prefix}woocommerce_sessions WHERE `session_id` = %s", $session_id), ARRAY_A );
+        } else {
+            $results = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}woocommerce_sessions", ARRAY_A );
+        }
+        // $results = self::unserialize_session_data($results);
+        return $results;
+    }
 
-        // Turn into array
-        $session_array = (array) $db_result;
-
+    public static function unserialize_session_data($db_result)
+    {
         // Unserialize data
-        foreach ($session_array as $key => $value) {
+        foreach ($db_result as $key => $value) {
             $session_array[$key] = maybe_unserialize($value);
         }
         foreach ($session_array['session_value'] as $key => $value) {
@@ -37,14 +48,13 @@ class Mirakel_Woocommerce_Carts
 
     public static function prepare_list_data()
     {
-
         $data = array();
 
-        global $wpdb;
-        $results = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}woocommerce_sessions", OBJECT);
+        $results = self::query_database('all');
+
         foreach ($results as $key => $value) {
 
-            $session_array = Mirakel_Woocommerce_Carts::convert_wc_session_into_array($value);
+            $session_array = Mirakel_Woocommerce_Carts::unserialize_session_data($value);
 
             // Session ID
             $session_id = $session_array['session_id'];
@@ -100,6 +110,22 @@ class Mirakel_Woocommerce_Carts
 
     public static function render_session_details( $session_id ) {
         require_once('inc/session-details.php');
+    }
+
+    public static function footer_debug() {
+        if( isset( WC()->session ) ) {
+
+            // IP address
+            WC()->session->set('test_data', 'testing 123');
+
+            // Referer
+
+            echo "<pre>";
+            var_dump( WC()->session );
+            echo "</pre>";
+        } else {
+            echo "no wc session";
+        }
     }
 
 }
